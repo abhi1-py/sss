@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            margin: 20px 0;
+        }
+
+        input, textarea, button, select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        textarea {
+            height: 100px;
+            resize: none;
+        }
+
+        #feed, #messageList {
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #fafafa;
+        }
+
+        .message-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+        }
+
+        .message-item:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        .nav-buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .nav-buttons button {
+            margin: 0 5px;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+
+        #notification {
+            background-color: #ffc107;
+            color: black;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            display: none; /* Hide by default */
+        }
+
+        #messageList {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .notification.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="mainContainer">
+        <h1>Welcome to Our Social Media Site</h1>
+        <form id="registerForm">
+            <h2>Register</h2>
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Register</button>
+        </form>
+        <form id="loginForm">
+            <h2>Login</h2>
+            <input type="text" id="loginUsername" placeholder="Username" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <script>
+        // Utility functions
+        function saveData(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        function getData(key) {
+            return JSON.parse(localStorage.getItem(key)) || [];
+        }
+
+        function displayPage(page) {
+            document.getElementById('mainContainer').innerHTML = page;
+        }
+
+        const pages = {
+            profile: `
+                <div class="container">
+                    <h1>Your Profile</h1>
+                    <div id="profileInfo">
+                        <h2 id="profileNameDisplay">Name: </h2>
+                        <p id="profileBioDisplay">Bio: </p>
+                    </div>
+                    <form id="profileForm">
+                        <h2>Edit Profile</h2>
+                        <input type="text" id="profileName" placeholder="Name" required>
+                        <input type="text" id="profileBio" placeholder="Bio" required>
+                        <button type="submit">Save</button>
+                    </form>
+                    <div class="nav-buttons">
+                        <button onclick="navigateTo('feed')">Feed</button>
+                        <button onclick="navigateTo('friends')">Friends</button>
+                        <button onclick="navigateTo('messages')">Messages</button>
+                    </div>
+                </div>
+            `,
+            feed: `
+                <div class="container">
+                    <h1>News Feed</h1>
+                    <form id="postForm">
+                        <textarea id="postContent" placeholder="What's on your mind?" required></textarea>
+                        <button type="submit">Post</button>
+                    </form>
+                    <div id="feed">
+                        <!-- News feed posts will be displayed here -->
+                    </div>
+                    <div class="nav-buttons">
+                        <button onclick="navigateTo('profile')">Profile</button>
+                        <button onclick="navigateTo('friends')">Friends</button>
+                        <button onclick="navigateTo('messages')">Messages</button>
+                    </div>
+                </div>
+            `,
+            friends: `
+                <div class="container">
+                    <h1>Your Friends</h1>
+                    <ul id="friendList">
+                        <!-- Friends list will be populated here -->
+                    </ul>
+                    <div class="nav-buttons">
+                        <button onclick="navigateTo('profile')">Profile</button>
+                        <button onclick="navigateTo('feed')">Feed</button>
+                        <button onclick="navigateTo('messages')">Messages</button>
+                    </div>
+                </div>
+            `,
+            messages: `
+                <div class="container">
+                    <h1>Messages</h1>
+                    <div id="notification" class="notification"></div>
+                    <div id="messageList">
+                        <!-- Messages will be displayed here -->
+                    </div>
+                    <form id="messageForm">
+                        <select id="messageRecipient" required>
+                            <option value="">Select Recipient</option>
+                        </select>
+                        <input type="text" id="messageContent" placeholder="Type a message" required>
+                        <button type="submit">Send</button>
+                    </form>
+                    <div class="nav-buttons">
+                        <button onclick="navigateTo('profile')">Profile</button>
+                        <button onclick="navigateTo('feed')">Feed</button>
+                        <button onclick="navigateTo('friends')">Friends</button>
+                    </div>
+                </div>
+            `,
+        };
+
+        function navigateTo(page) {
+            displayPage(pages[page]);
+            if (page === 'profile') setupProfilePage();
+            if (page === 'feed') setupFeedPage();
+            if (page === 'messages') setupMessagesPage();
+            if (page === 'friends') setupFriendsPage();
+        }
+
+        // User Registration
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let username = document.getElementById('username').value;
+            let email = document.getElementById('email').value;
+            let password = document.getElementById('password').value;
+
+            let users = getData('users');
+            users.push({ username, email, password, friends: [] });
+            saveData('users', users);
+
+            alert('User registered successfully!');
+        });
+
+        // User Login
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let username = document.getElementById('loginUsername').value;
+            let password = document.getElementById('loginPassword').value;
+
+            let users = getData('users');
+            let user = users.find(user => user.username === username && user.password === password);
+
+            if (user) {
+                sessionStorage.setItem('loggedInUser', username);
+                navigateTo('profile');
+            } else {
+                alert('Invalid credentials!');
+            }
+        });
+
+        // Profile Management
+        function setupProfilePage() {
+            let loggedInUser = sessionStorage.getItem('loggedInUser');
+            if (!loggedInUser) {
+                window.location.href = '';
+            }
+
+            let users = getData('users');
+            let user = users.find(user => user.username === loggedInUser);
+
+            document.getElementById('profileNameDisplay').innerText = 'Name: ' + (user.name || '');
+            document.getElementById('profileBioDisplay').innerText = 'Bio: ' + (user.bio || '');
+
+            document.getElementById('profileForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                let name = document.getElementById('profileName').value;
+                let bio = document.getElementById('profileBio').value;
+
+                user.name = name;
+                user.bio = bio;
+                saveData('users', users);
+
+                alert('Profile updated successfully!');
+                document.getElementById('profileNameDisplay').innerText = 'Name: ' + name;
+                document.getElementById('profileBioDisplay').innerText = 'Bio: ' + bio;
+            });
+        }
+
+        // Post Creation
+        function setupFeedPage() {
+            let posts = getData('posts');
+
+            function renderPosts() {
+                let feed = document.getElementById('feed');
+                feed.innerHTML = '';
+                posts.forEach(post => {
+                    let postDiv = document.createElement('div');
+                    postDiv.innerText = post.content;
+                    postDiv.style.padding = '10px';
+                    postDiv.style.marginBottom = '10px';
+                    postDiv.style.backgroundColor = '#ffffff';
+                    postDiv.style.borderRadius = '5px';
+                    postDiv.style.border = '1px solid #ddd';
+                    feed.appendChild(postDiv);
+                });
+            }
+
+            renderPosts();
+
+            document.getElementById('postForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                let content = document.getElementById('postContent').value;
+
+                posts.push({ content });
+                saveData('posts', posts);
+
+                renderPosts();
+                alert('Post created successfully!');
+            });
+        }
+
+        // Messaging System
+        function setupMessagesPage() {
+            let loggedInUser = sessionStorage.getItem('loggedInUser');
+            if (!loggedInUser) {
+                window.location.href = '';
+            }
+
+            let users = getData('users');
+            let messages = getData('messages') || {};
+            let recipientSelect = document.getElementById('messageRecipient');
+            let messageList = document.getElementById('messageList');
+            let notificationDiv = document.getElementById('notification');
+
+            function renderMessages(recipient) {
+                messageList.innerHTML = '';
+                (messages[recipient] || []).forEach(msg => {
+                    let msgDiv = document.createElement('div');
+                    msgDiv.className = 'message-item';
+                    msgDiv.innerText = msg;
+                    messageList.appendChild(msgDiv);
+                });
+
+                messageList.scrollTop = messageList.scrollHeight; // Auto scroll to bottom
+            }
+
+            function updateRecipientList() {
+                recipientSelect.innerHTML = '<option value="">Select Recipient</option>';
+                users.filter(u => u.username !== loggedInUser).forEach(user => {
+                    let option = document.createElement('option');
+                    option.value = user.username;
+                    option.innerText = user.username;
+                    recipientSelect.appendChild(option);
+                });
+            }
+
+            updateRecipientList();
+
+            recipientSelect.addEventListener('change', function() {
+                let recipient = recipientSelect.value;
+                renderMessages(recipient);
+            });
+
+            document.getElementById('messageForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                let recipient = recipientSelect.value;
+                let content = document.getElementById('messageContent').value;
+
+                if (recipient) {
+                    if (!messages[recipient]) messages[recipient] = [];
+                    if (!messages[loggedInUser]) messages[loggedInUser] = [];
+
+                    messages[recipient].push(`${loggedInUser}: ${content}`);
+                    messages[loggedInUser].push(`Me: ${content}`);
+
+                    saveData('messages', messages);
+
+                    renderMessages(recipient);
+                    showNotification(`New message sent to ${recipient}`);
+                } else {
+                    alert('Please select a recipient.');
+                }
+            });
+
+            function showNotification(message) {
+                notificationDiv.innerText = message;
+                notificationDiv.classList.add('show');
+                setTimeout(() => notificationDiv.classList.remove('show'), 5000); // Clear notification after 5 seconds
+            }
+
+            setInterval(function() {
+                let recipient = recipientSelect.value;
+                if (recipient) {
+                    renderMessages(recipient);
+                }
+            }, 5000); // Check for new messages every 5 seconds
+        }
+
+        // Friends List (static for demo purposes)
+        function setupFriendsPage() {
+            let loggedInUser = sessionStorage.getItem('loggedInUser');
+            if (!loggedInUser) {
+                window.location.href = '';
+            }
+
+            let users = getData('users');
+            let user = users.find(user => user.username === loggedInUser);
+
+            function updateFriendList() {
+                let friendList = document.getElementById('friendList');
+                friendList.innerHTML = '';
+                user.friends.forEach(friend => {
+                    let li = document.createElement('li');
+                    li.innerText = friend;
+                    friendList.appendChild(li);
+                });
+            }
+
+            updateFriendList();
+        }
+    </script>
+</body>
+</html>
